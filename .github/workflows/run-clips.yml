@@ -2,6 +2,12 @@ name: Run Clips
 
 on:
   workflow_dispatch:
+    inputs:
+      stream_url:
+        description: 'Stream URL to process'
+        required: false
+        default: 'http://www.youtube.com/watch?v=cyAPzaLcEsM'
+        type: string
 
 jobs:
   run-clips:
@@ -16,16 +22,28 @@ jobs:
           python-version: '3.11'
 
       - name: Install ffmpeg
-        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+        run: sudo apt-get update && sudo-apt-get install -y ffmpeg
 
       - name: Install Python dependencies
         run: pip install -r requirements.txt
 
-      - name: Run trends script
-        run: python scripts/trends.py
+      - name: Find moments
+        run: |
+          python scripts/moments.py "${{ inputs.stream_url }}" --top 8
+          JOB_DIR=$(ls -td jobs/*/ | head -n 1 | sed 's:/*$::')
+          echo "JOB_DIR=$JOB_DIR" >> $GITHUB_ENV
+
+      - name: Cut vertical 9:16 clips
+        run: |
+          python scripts/cut.py "$JOB_DIR" --pick 1
+          python scripts/cut.py "$JOB_DIR" --pick 2 || true
 
       - name: Upload output files
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: clips-output
-          path: trends.md
+          path: |
+            jobs/**/*.mp4
+            jobs/**/*.md
+          if-no-files-found: warn
