@@ -1,0 +1,31 @@
+name: Run Clips
+
+on:
+  workflow_dispatch:
+
+jobs:
+  run-clips:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install ffmpeg
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run trends script
+        run: python scripts/trends.py
+
+      - name: Upload output files
+        uses: actions/upload-artifact@v4
+        with:
+          name: clips-output
+          path: trends.md
